@@ -1,0 +1,39 @@
+name: Build package
+
+on: [ push, pull_request, workflow_dispatch ]
+
+# written referencing apollo save tool psp's CI
+
+jobs:
+  build_pkg:
+    runs-on: ubuntu-22.04
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+      # install latest pspdev sdk
+    - name: Download PSP SDK
+      run: |
+        curl -sL https://github.com/pspdev/pspdev/releases/download/latest/pspdev-ubuntu-latest.tar.gz | tar xvz -C ./
+
+    - name: Set env vars
+      run: |
+        echo "sha_name=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_ENV
+        echo "PSPDEV=${GITHUB_WORKSPACE}/pspdev" >> $GITHUB_ENV
+        echo "${GITHUB_WORKSPACE}/pspdev/bin" >> $GITHUB_PATH
+
+    - name: Build deemerh.prx
+      run: |
+        cd deemer_hooker
+        cp procfw_sdk_prebuilt/include/* ${{ env.PSPDEV }}/psp/sdk/include/
+        cp procfw_sdk_prebuilt/lib/* ${{ env.PSPDEV }}/psp/sdk/lib/
+        make
+
+    - name: Push package artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: SGDeemer_${{ env.sha_name }}
+        path: |
+           deemer_hooker/deemerh.prx
+        if-no-files-found: error
