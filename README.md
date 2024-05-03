@@ -7,6 +7,7 @@
 - Bypass psp system library save console binding
 	- For games that bind saves to mac address as well, https://github.com/bucanero/apollo-psp is recommended, or use mac spoofing provided by most cfws
 - Build against 6.61 procfw libraries
+- Update SDParams->dataSize after loading raw save
 
 ### Installation
 

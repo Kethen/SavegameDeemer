@@ -294,8 +294,10 @@ int hcDeemerSavedataGetStatusCallback(int arg1, int arg2, void *arg)
     }
 
     if(!skipLoad){
+      // do we handle raw saves from users that are bigger than dataBufSize?
       sprintf(s, "ms0:/PSP/SAVEPLAIN/%s%s/SDDATA.BIN", SDParams->gameName, SDParams->saveName);
       r = hcReadFile(s, SDParams->dataBuf, SDParams->dataBufSize);
+      SDParams->dataSize = r;
       sprintf(s, "ms0:/PSP/SAVEPLAIN/%s%s/SDINFO.BIN", SDParams->gameName, SDParams->saveName);
       r = hcReadFile(s, &SDParams->sfoParam, sizeof(PspUtilitySavedataSFOParam));
     }
