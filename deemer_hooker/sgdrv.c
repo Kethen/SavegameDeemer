@@ -183,6 +183,7 @@ void* pspPatchProcCall(u32 *addr, void *func)
   return addr; 
 } */
 
+extern int capturedSDParamsCallbackBusy;
 // the hook-a-boo
 int (*oUtilitySavedataInitStart)(SceUtilitySavedataParam* params);
 int patchedUtilitySavedataInitStart(SceUtilitySavedataParam* params)
@@ -190,16 +191,21 @@ int patchedUtilitySavedataInitStart(SceUtilitySavedataParam* params)
 	int r;
 	int k;
 	
+	capturedSDParamsCallbackBusy = 1;
 	k = pspSdkSetK1(0);
 	r = sceKernelNotifyCallback(hcDeemerDriverCapturedSDParamsCallback, (int)params);
 	pspSdkSetK1(k);
 	
 	// give everything some time to become idle....
-	sceKernelDelayThread(2500000);
+	//sceKernelDelayThread(2500000);
+	while(capturedSDParamsCallbackBusy){
+		sceKernelDelayThread(10000);
+	}
 	
   return oUtilitySavedataInitStart(params);
 }
 
+extern int savedataGetStatusCallbackBusy;
 int (*oUtilitySavedataGetStatus)(void);
 int patchedUtilitySavedataGetStatus(void)
 {
@@ -210,12 +216,16 @@ int patchedUtilitySavedataGetStatus(void)
   
   if( r == 3 )
   {
+	  savedataGetStatusCallbackBusy = 1;
 	  k = pspSdkSetK1(0);
     cbr = sceKernelNotifyCallback(hcDeemerSDGetStatusCallback, 0);
 	  pspSdkSetK1(k);
   
     // give everything some time to become idle....
-	  sceKernelDelayThread(2500000);
+	  //sceKernelDelayThread(2500000);
+	while(savedataGetStatusCallbackBusy){
+      sceKernelDelayThread(100000);
+	}
   }
   
   return r;

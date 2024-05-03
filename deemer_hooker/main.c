@@ -69,8 +69,8 @@ typedef struct SceUtilitySavedataParamEx
 
   pspUtilityDialogCommon base;
   int mode;
-  int unknown12;
-  int unknown13;
+  int bind;
+  int overwrite;
   char gameName[16];
   char saveName[20];
   SceUtilitySavedataSavenames* saveNames;
@@ -201,6 +201,7 @@ void debugIssueMessage(char* msg, int frames)
 }*/
 
 
+int capturedSDParamsCallbackBusy = 0;
 int hcDeemerCapturedSDParamsCallback(int arg1, int arg2, void *arg)
 {
   char s[512];
@@ -209,22 +210,31 @@ int hcDeemerCapturedSDParamsCallback(int arg1, int arg2, void *arg)
   int patchSFO = 0;
   int btn;
   SceCtrlData pad;
-
+  int skipSave = 1;
   // check if user holds the button to trigger overwriting/patching
   // the SFO stuff
-  sceKernelDelayThread(500000);
-  sceCtrlReadBufferPositive(&pad, 1);
+  // sceKernelDelayThread(500000);
+  //sceCtrlReadBufferPositive(&pad, 1);
+  sceCtrlPeekBufferPositive(&pad, 1);
   btn = pad.Buttons & 0xFFFF;
   if(btn & PSP_CTRL_LTRIGGER)
   {
     patchSFO = 1;
   }
 
+  if(btn & PSP_CTRL_RTRIGGER)
+  {
+    skipSave = 0;
+  }
+
   SDParams = (SceUtilitySavedataParamEx*)arg2;
   sprintf(s, "ms0:/PSP/SAVEPLAIN/%s%s/%s.bin", SDParams->gameName, SDParams->saveName , SDParams->gameName);
-  hcWriteFile(s, (u8*)arg2, SDParams->base.size);
 
-  if( (SDParams->mode == 1) || (SDParams->mode == 3) || (SDParams->mode == 5) )
+  if(!skipSave){
+    hcWriteFile(s, (u8*)arg2, SDParams->base.size);
+  }
+
+  if( (SDParams->mode == 1) || (SDParams->mode == 3) || (SDParams->mode == 5) && !skipSave)
   {
     sprintf(s, "ms0:/PSP/SAVEPLAIN/%s%s/SDDATA.BIN", SDParams->gameName, SDParams->saveName);
     hcWriteFile(s, SDParams->dataBuf, SDParams->dataBufSize);
@@ -251,10 +261,11 @@ int hcDeemerCapturedSDParamsCallback(int arg1, int arg2, void *arg)
     SDParamBuffer = 0;
   }
 
+  capturedSDParamsCallbackBusy = 0;
   return 0;
 }
 
-
+int savedataGetStatusCallbackBusy = 0;
 int hcDeemerSavedataGetStatusCallback(int arg1, int arg2, void *arg)
 {
   int i;
@@ -262,21 +273,40 @@ int hcDeemerSavedataGetStatusCallback(int arg1, int arg2, void *arg)
   char s[512];
   SceUtilitySavedataParamEx* SDParams;
 
+
+
+
   // check if we remembered the param struct address
   // 'cause if we did, we're in loading mode, and might want to load something ;-)
   i = (int)SDParamBuffer;
   if( i != 0 )
   {
     SDParams = SDParamBuffer;
+    int skipLoad = 1;
+    int btn;
+    SceCtrlData pad;
 
-    sprintf(s, "ms0:/PSP/SAVEPLAIN/%s%s/SDDATA.BIN", SDParams->gameName, SDParams->saveName);
-    r = hcReadFile(s, SDParams->dataBuf, SDParams->dataBufSize);
-    sprintf(s, "ms0:/PSP/SAVEPLAIN/%s%s/SDINFO.BIN", SDParams->gameName, SDParams->saveName);
-    r = hcReadFile(s, &SDParams->sfoParam, sizeof(PspUtilitySavedataSFOParam));
-    
+    sceCtrlPeekBufferPositive(&pad, 1);
+    btn = pad.Buttons & 0xFFFF;
+    if(btn & PSP_CTRL_RTRIGGER)
+    {
+      skipLoad = 0;
+    }
+
+    if(!skipLoad){
+      sprintf(s, "ms0:/PSP/SAVEPLAIN/%s%s/SDDATA.BIN", SDParams->gameName, SDParams->saveName);
+      r = hcReadFile(s, SDParams->dataBuf, SDParams->dataBufSize);
+      sprintf(s, "ms0:/PSP/SAVEPLAIN/%s%s/SDINFO.BIN", SDParams->gameName, SDParams->saveName);
+      r = hcReadFile(s, &SDParams->sfoParam, sizeof(PspUtilitySavedataSFOParam));
+    }
+
+    // ppsspp sets this to disable save binding
+    SDParams->bind = 1021;
+
     SDParamBuffer = 0;
   }
 
+  savedataGetStatusCallbackBusy = 0;
   return 0;
 }
 
