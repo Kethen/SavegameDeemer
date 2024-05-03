@@ -234,7 +234,7 @@ int hcDeemerCapturedSDParamsCallback(int arg1, int arg2, void *arg)
     hcWriteFile(s, (u8*)arg2, SDParams->base.size);
   }
 
-  if( (SDParams->mode == 1) || (SDParams->mode == 3) || (SDParams->mode == 5) && !skipSave)
+  if(((SDParams->mode == 1) || (SDParams->mode == 3) || (SDParams->mode == 5)) && !skipSave)
   {
     sprintf(s, "ms0:/PSP/SAVEPLAIN/%s%s/SDDATA.BIN", SDParams->gameName, SDParams->saveName);
     hcWriteFile(s, SDParams->dataBuf, SDParams->dataBufSize);
