@@ -1,4 +1,4 @@
-# SGDeemer by @TheHellcat, with some modifications
+# SGDeemer by https://github.com/TheHellcat/, with some modifications
 
 ### Modifications
 
